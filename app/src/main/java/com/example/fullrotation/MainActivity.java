@@ -1,46 +1,69 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.fullrotation">
+package com.example.fullrotation;
 
-    <!-- مجوزهای مورد نیاز برای اجرا در پس‌زمینه، پنجره شناور و ری‌ستارت -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
-    <application
-        android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
-        android:label="چرخش خودکار"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+public class MainActivity extends AppCompatActivity {
 
-        <!-- صفحه اصلی برنامه -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    private SwitchCompat switchRotation;
+    private TextView tvStatus;
+    private SharedPreferences prefs;
 
-        <!-- سرویس پس‌زمینه برای فعال ماندن چرخش -->
-        <service
-            android:name=".RotationService"
-            android:enabled="true"
-            android:exported="false" />
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        <!-- دریافت‌کننده پیام روشن شدن گوشی -->
-        <receiver
-            android:name=".BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+        switchRotation = findViewById(R.id.switchRotation);
+        tvStatus = findViewById(R.id.tvStatus);
+        prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
 
-    </application>
+        // بررسی و درخواست مجوز پنجره شناور (Overlay)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, 101);
+        }
 
-</manifest>
+        // تنظیم وضعیت اولیه کلید براساس تنظیمات ذخیره‌شده
+        boolean isEnabled = prefs.getBoolean("is_enabled", false);
+        switchRotation.setChecked(isEnabled);
+        updateStatusText(isEnabled);
+
+        switchRotation.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("is_enabled", isChecked).apply();
+            updateStatusText(isChecked);
+
+            Intent serviceIntent = new Intent(MainActivity.this, RotationService.class);
+            if (isChecked) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent);
+                } else {
+                    startService(serviceIntent);
+                }
+                Toast.makeText(MainActivity.this, "چرخش خودکار فعال شد", Toast.LENGTH_SHORT).show();
+            } else {
+                stopService(serviceIntent);
+                Toast.makeText(MainActivity.this, "چرخش خودکار غیرفعال شد", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateStatusText(boolean isEnabled) {
+        if (isEnabled) {
+            tvStatus.setText("وضعیت: فعال");
+            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+        } else {
+            tvStatus.setText("وضعیت: غیرفعال");
+            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        }
+    }
+                    }
