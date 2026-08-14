@@ -1,7 +1,5 @@
 name: Build Android APK
 on:
-  push:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -33,13 +31,11 @@ jobs:
           BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
           UNSIGNED_APK=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           
-          # بازیابی کلید ثابت از Secrets
-          echo "${{ secrets.ENCODED_KEY }}" | base64 -d > release.jks
+          # ساخت کلید امضا
+          keytool -genkey -v -keystore release.jks -alias myalias -keyalg RSA -keysize 2048 -validity 10000 -storepass 12345678 -keypass 12345678 -dname "CN=AutoRotate, OU=Dev, O=App, L=City, S=State, C=IR"
           
-          # مرتب‌سازی فایل
+          # مرتب‌سازی و امضا
           $BUILD_TOOLS_DIR/zipalign -v 4 "$UNSIGNED_APK" aligned.apk
-          
-          # امضای رسمی با کلید ثابت پروژه
           $BUILD_TOOLS_DIR/apksigner sign --ks release.jks --ks-pass pass:12345678 --ks-key-alias myalias --key-pass pass:12345678 --out AutoRotateApp-Release.apk aligned.apk
 
       - name: Upload Release APK
