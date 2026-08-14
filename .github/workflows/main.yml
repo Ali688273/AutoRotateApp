@@ -27,19 +27,20 @@ jobs:
       - name: Build Release APK
         run: gradle assembleRelease --stacktrace
 
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        continue-on-error: true
+      - name: Generate Keystore and Sign APK
+        run: |
+          # ساخت فایل کلید امضا
+          keytool -genkey -v -keystore my-release-key.jks -alias myalias -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=App, OU=Dev, O=Store, L=City, S=State, C=IR"
+          
+          # پیدا کردن فایل APK و امضا کردن آن
+          APK_FILE=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore my-release-key.jks -storepass 123456 -keypass 123456 $APK_FILE myalias
+          
+          # تغییر نام برای مشخص شدن
+          mv $APK_FILE app/build/outputs/apk/release/AutoRotateApp-Signed.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AutoRotateApp-APK
-          path: '**/build/outputs/apk/**/*.apk'
+          path: 'app/build/outputs/apk/release/AutoRotateApp-Signed.apk'
