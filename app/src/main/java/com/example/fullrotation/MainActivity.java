@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(b);
         prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);
         lang=prefs.getString("language","fa"); dark=prefs.getBoolean("dark_theme",false);
+        setTheme(dark ? R.style.Theme_AutoRotateApp_Dark : R.style.Theme_AutoRotateApp);
         build();
     }
     private String t(String fa,String en){return lang.equals("fa")?fa:en;}
