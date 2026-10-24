@@ -8,43 +8,29 @@ import android.os.Build;
 import android.provider.Settings;
 
 public class BootReceiver extends BroadcastReceiver {
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            return;
-        }
-
-        SharedPreferences prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
-        if (!prefs.getBoolean("is_enabled", false)) {
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.System.canWrite(context)) {
-            return;
-        }
-
-        String mode = prefs.getString("rotation_mode", "auto");
+    @Override public void onReceive(Context context, Intent intent) {
+        if (intent == null || (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())
+                && !Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction()))) return;
+        SharedPreferences prefs=context.getSharedPreferences("app_prefs",Context.MODE_PRIVATE);
+        if (!prefs.getBoolean("is_enabled",false)) return;
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.M && !Settings.System.canWrite(context)) return;
+        String mode=prefs.getString("rotation_mode","auto");
         try {
             if ("auto".equals(mode)) {
-                Settings.System.putInt(context.getContentResolver(),
-                        Settings.System.ACCELEROMETER_ROTATION, 1);
+                Settings.System.putInt(context.getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
             } else {
                 int rotation;
-                switch (mode) {
-                    case "portrait": rotation = 0; break;
-                    case "landscape": rotation = 1; break;
-                    case "reverse_portrait": rotation = 2; break;
-                    case "reverse_landscape": rotation = 3; break;
-                    default: rotation = 0;
+                switch(mode) {
+                    case "landscape": case "video": rotation=1; break;
+                    case "reverse_portrait": rotation=2; break;
+                    case "reverse_landscape": rotation=3; break;
+                    default: rotation=0;
                 }
-                Settings.System.putInt(context.getContentResolver(),
-                        Settings.System.USER_ROTATION, rotation);
-                Settings.System.putInt(context.getContentResolver(),
-                        Settings.System.ACCELEROMETER_ROTATION, 0);
+                Settings.System.putInt(context.getContentResolver(),Settings.System.USER_ROTATION,rotation);
+                Settings.System.putInt(context.getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);
             }
-        } catch (SecurityException ignored) {
-            // Reopen the app and grant the special system-settings permission if needed.
+        } catch(SecurityException ignored) {
+            // Keep the saved preference; the app will ask for permission when reopened.
         }
     }
 }
