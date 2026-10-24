@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
     private void setModeButton(Button b){b.setText(labels[index(prefs.getString("rotation_mode","auto"))]+"  ▾");}
     private int index(String m){for(int i=0;i<modes.length;i++)if(modes[i].equals(m))return i;return 0;}
     private void chooseMode(String pkg){
-        String current=pkg==null?prefs.getString("rotation_mode","auto"):prefs.getString("rule_"+pkg,"auto");
+        String current=pkg==null?prefs.getString("rotation_mode","auto"):(prefs.contains("rule_"+pkg)?prefs.getString("rule_"+pkg,"auto"):prefs.getString("rotation_mode","auto"));
         String[] options=labels;
         if(pkg!=null){options=Arrays.copyOf(labels,labels.length+1);options[labels.length]=t("استفاده از حالت پیش‌فرض","Use global default");}
         final String[] choices=options;
