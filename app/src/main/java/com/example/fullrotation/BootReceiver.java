@@ -17,6 +17,7 @@ public class BootReceiver extends BroadcastReceiver {
         String mode=prefs.getString("rotation_mode","auto");
         try {
             if ("auto".equals(mode)) {
+                Settings.System.putInt(context.getContentResolver(),Settings.System.USER_ROTATION,0);
                 Settings.System.putInt(context.getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
             } else {
                 int rotation;
