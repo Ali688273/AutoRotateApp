@@ -81,9 +81,20 @@ public class QuickPanelService extends Service {
     private void apply(String mode){
         if(Build.VERSION.SDK_INT>=23&&!Settings.System.canWrite(this))return;
         try{
-            if("auto".equals(mode)){Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,0);Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);}
-            else{int r;switch(mode){case "landscape":r=1;break;case "reverse_portrait":r=2;break;case "reverse_landscape":r=3;break;default:r=0;}
-                Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,r);Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);}
+            if("auto".equals(mode)){
+                Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
+            }else{
+                int rotation;
+                switch(mode){
+                    case "landscape": case "video": rotation=1; break;
+                    case "reverse_portrait": rotation=2; break;
+                    case "reverse_landscape": rotation=3; break;
+                    default: rotation=0;
+                }
+                // Disable sensor rotation first so the requested angle is not ignored.
+                Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);
+                Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,rotation);
+            }
         }catch(SecurityException ignored){}
     }
     @Override public int onStartCommand(Intent i,int flags,int id){return START_STICKY;}
