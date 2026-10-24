@@ -107,7 +107,6 @@ public class MainActivity extends AppCompatActivity {
             saveOriginal();
             prefs.edit().putBoolean("is_enabled",true).apply();
             enabled.setChecked(true);
-            applyActivityOrientation();
             boolean ok=apply(prefs.getString("rotation_mode","auto"));
             toast(ok?t("حالت اعمال شد و کنترل روشن ماند","Orientation applied; control remains enabled"):t("اعمال نشد؛ مجوز تنظیمات سیستم را بررسی کن","Could not apply; check system settings permission"));
             updateStatus();
