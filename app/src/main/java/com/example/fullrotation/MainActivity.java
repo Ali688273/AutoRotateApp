@@ -91,6 +91,10 @@ public class MainActivity extends AppCompatActivity {
         Button theme=button(t(dark?"تغییر به تم سفید":"تغییر به تم سیاه",dark?"Switch to white theme":"Switch to black theme")); add(theme,4,6);
         theme.setOnClickListener(v->{prefs.edit().putBoolean("dark_theme",!dark).apply();recreate();});
 
+        section(t("پاداش اختیاری","Optional reward"));
+        Button rewardAd=button(t("تماشای تبلیغ و دریافت ۲۴ ساعت بدون تبلیغ تمام‌صفحه","Watch an ad for 24 hours without full-screen ads")); add(rewardAd,4,6);
+        rewardAd.setOnClickListener(v->AdsManager.showRewardedAd(this));
+
         section(t("وضعیت و عیب‌یابی","Status & troubleshooting"));
         status=txt("",14,true,fg); status.setPadding(dp(12),dp(12),dp(12),dp(12)); cardView(status);
         Button permission=button(t("مجوز تنظیمات سیستم","System settings permission")); add(permission,4,6); permission.setOnClickListener(v->requestWrite());
