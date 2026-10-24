@@ -19,7 +19,11 @@ import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
-    private LinearLayout page;
+    private LinearLayout page, tabBar;
+    private LinearLayout[] pages;
+    private ScrollView[] tabScrolls;
+    private Button[] tabButtons;
+    private int activeTab = 0;
     private boolean dark;
     private String lang;
     private int bg, card, fg, muted, accent;
@@ -28,7 +32,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView status;
     private FrameLayout standardBannerContainer;
     private FrameLayout nativeBannerContainer;
-    private long lastInterstitialActionAt;
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -46,8 +49,33 @@ public class MainActivity extends AppCompatActivity {
             new String[]{"Auto sensor","Portrait","Reverse portrait","Landscape","Reverse landscape","Reading (portrait)","Video (landscape)"};
         if(Build.VERSION.SDK_INT>=21){getWindow().setStatusBarColor(dark?Color.BLACK:Color.WHITE);getWindow().setNavigationBarColor(dark?Color.BLACK:Color.WHITE);}
         if(Build.VERSION.SDK_INT>=23){int flags=dark?0:android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;if(Build.VERSION.SDK_INT>=26&&!dark)flags|=android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;getWindow().getDecorView().setSystemUiVisibility(flags);}
-        ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(bg);
-        page=new LinearLayout(this); page.setOrientation(LinearLayout.VERTICAL); page.setPadding(dp(18),dp(18),dp(18),dp(30)); scroll.addView(page);
+        pages=new LinearLayout[3];
+        tabScrolls=new ScrollView[3];
+        for(int i=0;i<3;i++){
+            tabScrolls[i]=new ScrollView(this);
+            tabScrolls[i].setFillViewport(true);
+            tabScrolls[i].setBackgroundColor(bg);
+            pages[i]=new LinearLayout(this);
+            pages[i].setOrientation(LinearLayout.VERTICAL);
+            pages[i].setPadding(dp(18),dp(18),dp(18),dp(30));
+            tabScrolls[i].addView(pages[i]);
+        }
+        page=pages[0];
+        tabBar=new LinearLayout(this);
+        tabBar.setOrientation(LinearLayout.HORIZONTAL);
+        tabBar.setPadding(dp(8),dp(4),dp(8),dp(8));
+        tabButtons=new Button[3];
+        String[] tabNames={t("چرخش","Rotation"),t("برنامه‌ها","Apps"),t("تنظیمات","Settings")};
+        for(int i=0;i<3;i++){
+            final int target=i;
+            Button b=button(tabNames[i]);
+            b.setTextSize(13);
+            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,dp(46),1f);
+            bp.setMargins(dp(3),0,dp(3),0);
+            tabBar.addView(b,bp);
+            tabButtons[i]=b;
+            b.setOnClickListener(v->showTab(target));
+        }
         TextView title=txt(t("چرخش صفحه","Screen Rotation"),28,true,fg); title.setGravity(Gravity.CENTER); add(title,0,8);
         TextView desc=txt(t("کنترل هوشمند جهت صفحه","Smart orientation control"),14,false,muted); desc.setGravity(Gravity.CENTER); add(desc,0,18);
         nativeBannerContainer = new FrameLayout(this);
@@ -71,8 +99,9 @@ public class MainActivity extends AppCompatActivity {
         mode.setOnClickListener(v->chooseMode(null));
         Button apply=button(t("اعمال حالت انتخاب‌شده","Apply selected mode")); add(apply,4,6);
         apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));
-            if(ok && System.currentTimeMillis()-lastInterstitialActionAt >= 10*60*1000L){ lastInterstitialActionAt=System.currentTimeMillis(); AdsManager.maybeShowInterstitial(this); }});
+            });
 
+        page=pages[1];
         section(t("قوانین اختصاصی برنامه‌ها","Per-app rules"));
         add(txt(t("ابتدا کنترل عمومی را فعال کن؛ سپس برای هر برنامه جهت جداگانه تعیین کن و سرویس دسترس‌پذیری را هم فعال کن.","First enable global rotation control, then set a separate orientation for each app and enable the Accessibility service."),14,false,muted),4,6);
         Button choose=button(t("انتخاب برنامه و جهت","Choose app and orientation")); add(choose,4,6); choose.setOnClickListener(v->chooseApp());
@@ -80,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
         access.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         renderRules();
 
+        page=pages[2];
         section(t("پنل شناور سریع","Floating quick panel"));
         add(txt(t("پنل شناور تغییر سریع جهت؛ نیازمند مجوز نمایش روی برنامه‌ها.","Floating orientation controls; overlay permission is required."),14,false,muted),4,6);
         Button floating=button(t("فعال‌سازی پنل شناور","Start floating panel")); add(floating,4,6);
@@ -108,15 +138,30 @@ public class MainActivity extends AppCompatActivity {
             .setMessage(t("برای اجرای قوانین برنامه‌ها، در تنظیمات باتری این برنامه را روی «بدون محدودیت» قرار بده. قوانین برنامه‌ها به سرویس دسترس‌پذیری و مجوز تنظیمات سیستم نیاز دارند.","Set battery usage to Unrestricted for reliable per-app rules. Per-app switching requires Accessibility and system settings permission."))
             .setPositiveButton(t("تنظیمات باتری","Battery settings"),(d,w)->{try{startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));}catch(Exception ignored){}}).setNegativeButton(t("بستن","Close"),null).show());
         updateStatus();
-        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(bg);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(bg);
+        root.addView(tabBar,new LinearLayout.LayoutParams(-1,-2));
+        for(int i=0;i<3;i++)root.addView(tabScrolls[i],new LinearLayout.LayoutParams(-1,0,1f));
         standardBannerContainer = new FrameLayout(this);
         standardBannerContainer.setMinimumHeight(dp(50));
         root.addView(standardBannerContainer, new LinearLayout.LayoutParams(-1, -2));
         setContentView(root);
+        showTab(0);
         AdsManager.loadNativeBanner(this, nativeBannerContainer);
         AdsManager.loadStandardBanner(this, standardBannerContainer);
         AdsManager.prepareFullScreen(this);
+    }
+    private void showTab(int tab){
+        activeTab=Math.max(0,Math.min(2,tab));
+        if(tabScrolls==null)return;
+        for(int i=0;i<tabScrolls.length;i++){
+            tabScrolls[i].setVisibility(i==activeTab?View.VISIBLE:View.GONE);
+            if(tabButtons!=null&&tabButtons[i]!=null){
+                tabButtons[i].setTextColor(i==activeTab?(dark?Color.BLACK:Color.WHITE):fg);
+                tabButtons[i].setBackground(shape(i==activeTab?accent:card));
+            }
+        }
     }
     private void section(String s){TextView v=txt(s,18,true,fg);add(v,dp(20),dp(8));}
     private TextView txt(String s,int size,boolean bold,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setGravity(lang.equals("fa")?Gravity.RIGHT:Gravity.LEFT);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
@@ -141,14 +186,30 @@ public class MainActivity extends AppCompatActivity {
         }).setNegativeButton(t("لغو","Cancel"),null).show();
     }
     private void chooseApp(){
-        Intent i=new Intent(Intent.ACTION_MAIN);i.addCategory(Intent.CATEGORY_LAUNCHER);
-        List<android.content.pm.ResolveInfo> apps=getPackageManager().queryIntentActivities(i,0);
-        Collections.sort(apps,Comparator.comparing(a->String.valueOf(a.loadLabel(getPackageManager())).toLowerCase(Locale.ROOT)));
-        List<android.content.pm.ResolveInfo> filtered=new ArrayList<>();
-        for(android.content.pm.ResolveInfo a:apps)if(a.activityInfo!=null&&!a.activityInfo.packageName.equals(getPackageName()))filtered.add(a);
-        if(filtered.isEmpty()){toast(t("برنامه‌ای برای انتخاب پیدا نشد.","No launchable apps were found."));return;}
-        String[] names=new String[filtered.size()];for(int n=0;n<names.length;n++)names[n]=String.valueOf(filtered.get(n).loadLabel(getPackageManager()));
-        new AlertDialog.Builder(this).setTitle(t("انتخاب برنامه","Choose app")).setItems(names,(d,n)->chooseMode(filtered.get(n).activityInfo.packageName)).setNegativeButton(t("لغو","Cancel"),null).show();
+        toast(t("فهرست برنامه‌ها در حال آماده‌شدن است…","Loading installed apps…"));
+        new Thread(()->{
+            Intent i=new Intent(Intent.ACTION_MAIN);i.addCategory(Intent.CATEGORY_LAUNCHER);
+            List<android.content.pm.ResolveInfo> apps=getPackageManager().queryIntentActivities(i,0);
+            List<AppChoice> filtered=new ArrayList<>();
+            for(android.content.pm.ResolveInfo a:apps){
+                if(a.activityInfo==null||a.activityInfo.packageName.equals(getPackageName()))continue;
+                String label;
+                try{label=String.valueOf(a.loadLabel(getPackageManager()));}catch(Exception e){label=a.activityInfo.packageName;}
+                filtered.add(new AppChoice(label,a.activityInfo.packageName));
+            }
+            Collections.sort(filtered,Comparator.comparing(a->a.label.toLowerCase(Locale.ROOT)));
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed())return;
+                if(filtered.isEmpty()){toast(t("برنامه‌ای برای انتخاب پیدا نشد.","No launchable apps were found."));return;}
+                String[] names=new String[filtered.size()];
+                for(int n=0;n<names.length;n++)names[n]=filtered.get(n).label;
+                new AlertDialog.Builder(this).setTitle(t("انتخاب برنامه","Choose app")).setItems(names,(d,n)->chooseMode(filtered.get(n).pkg)).setNegativeButton(t("لغو","Cancel"),null).show();
+            });
+        },"load-launcher-apps").start();
+    }
+    private static final class AppChoice{
+        final String label,pkg;
+        AppChoice(String label,String pkg){this.label=label;this.pkg=pkg;}
     }
     private void renderRules(){
         List<String> keys=new ArrayList<>();for(String k:prefs.getAll().keySet())if(k.startsWith("rule_"))keys.add(k.substring(5));Collections.sort(keys);
@@ -168,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean accessibilityEnabled(){AccessibilityManager m=(AccessibilityManager)getSystemService(ACCESSIBILITY_SERVICE);if(m==null)return false;for(AccessibilityServiceInfo i:m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK))if(i.getId()!=null&&i.getId().contains("PerAppRotationService"))return true;return false;}
     @Override protected void onPause(){ AdsManager.onActivityPaused(); super.onPause(); }
-    @Override protected void onResume(){ super.onResume(); if(prefs!=null&&prefs.getBoolean("is_enabled",false)&&canWrite())apply(prefs.getString("rotation_mode","auto")); if(status!=null)updateStatus(); AdsManager.onActivityResumed(this); AdsManager.loadNativeBanner(this, nativeBannerContainer); AdsManager.loadStandardBanner(this, standardBannerContainer); }
+    @Override protected void onResume(){ super.onResume(); if(prefs!=null&&prefs.getBoolean("is_enabled",false)&&canWrite())apply(prefs.getString("rotation_mode","auto")); if(status!=null)updateStatus(); }
     @Override protected void onDestroy(){ AdsManager.cleanup(this, standardBannerContainer); super.onDestroy(); }
     private void updateStatus(){if(status==null)return;status.setText((prefs.getBoolean("is_enabled",false)?t("کنترل عمومی: فعال","Global control: ON"):t("کنترل عمومی: خاموش","Global control: OFF"))+"\n"+(canWrite()?t("مجوز تنظیمات: فعال","Settings permission: granted"):t("مجوز تنظیمات: لازم است","Settings permission: required"))+"\n"+(accessibilityEnabled()?t("قوانین برنامه‌ها: آماده","Per-app rules: ready"):t("قوانین برنامه‌ها: سرویس دسترس‌پذیری را فعال کن","Per-app rules: enable Accessibility service")));}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
