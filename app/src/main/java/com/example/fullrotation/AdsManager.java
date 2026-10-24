@@ -159,6 +159,7 @@ public final class AdsManager {
     public static void onActivityResumed(Activity activity) {
         long away = System.currentTimeMillis() - lastPauseAt;
         if (lastPauseAt > 0 && away >= 5000 && away < 6 * 60 * 60 * 1000L
+                && !isRewardBypassActive(activity)
                 && System.currentTimeMillis() - lastFullScreenAt >= 10 * 60 * 1000L
                 && appOpenPrepared && !activity.isFinishing() && !activity.isDestroyed()) {
             try {
@@ -204,6 +205,8 @@ public final class AdsManager {
 
     public static void maybeShowInterstitial(Activity activity) {
         if (activity.isFinishing() || activity.isDestroyed()
+                || System.currentTimeMillis() - APP_STARTED_AT < 5 * 60 * 1000L
+                || isRewardBypassActive(activity)
                 || System.currentTimeMillis() - lastFullScreenAt < 10 * 60 * 1000L) return;
         try {
             String placement = AdsConfig.ADIVERY_INTERSTITIAL;
