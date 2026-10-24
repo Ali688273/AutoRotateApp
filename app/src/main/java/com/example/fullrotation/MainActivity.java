@@ -92,9 +92,21 @@ public class MainActivity extends AppCompatActivity {
         enabled.setChecked(prefs.getBoolean("is_enabled",false)); cardView(enabled);
         enabled.setOnCheckedChangeListener((v,on)->{
             if(on&&!canWrite()){v.setChecked(false);requestWrite();return;}
-            prefs.edit().putBoolean("is_enabled",on).apply();
-            if(on){saveOriginal();apply(prefs.getString("rotation_mode","auto"));}
-            else restoreOriginal();
+            if(on){
+                saveOriginal();
+                boolean applied=apply(prefs.getString("rotation_mode","auto"));
+                if(!applied){
+                    prefs.edit().putBoolean("is_enabled",false).apply();
+                    v.setChecked(false);
+                    toast(t("تنظیم چرخش سیستم اعمال نشد؛ مجوز و تنظیمات سیستم را بررسی کن.","System rotation could not be applied; check system settings permission."));
+                    updateStatus();
+                    return;
+                }
+                prefs.edit().putBoolean("is_enabled",true).apply();
+            }else{
+                prefs.edit().putBoolean("is_enabled",false).apply();
+                restoreOriginal();
+            }
             updateStatus();
         });
 
