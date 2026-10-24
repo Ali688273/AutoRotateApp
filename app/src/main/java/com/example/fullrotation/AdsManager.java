@@ -2,17 +2,12 @@ package com.example.fullrotation;
 
 import android.app.Activity;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
 import com.adivery.sdk.Adivery;
 import com.adivery.sdk.AdiveryListener;
-import com.adivery.sdk.AdiveryAdListener;
-import com.adivery.sdk.AdiveryBannerAdView;
-import com.adivery.sdk.BannerSize;
 
 import ir.tapsell.plus.AdHolder;
 import ir.tapsell.plus.AdRequestCallback;
@@ -27,7 +22,8 @@ public final class AdsManager {
     private static final String TAG = "AutoRotateAds";
     private static String standardBannerResponse;
     private static String nativeBannerResponse;
-    private static String interstitialResponse;
+    private static boolean standardBannerRequested;
+    private static boolean nativeBannerRequested;
     private static long lastFullScreenAt;
     private static long lastPauseAt;
     private static final long APP_STARTED_AT = System.currentTimeMillis();
@@ -37,7 +33,8 @@ public final class AdsManager {
     private AdsManager() {}
 
     public static void loadStandardBanner(Activity activity, FrameLayout container) {
-        if (!AdsApplication.isTapsellReady() || activity.isFinishing() || activity.isDestroyed()) return;
+        if (!AdsApplication.isTapsellReady() || activity.isFinishing() || activity.isDestroyed() || standardBannerRequested) return;
+        standardBannerRequested = true;
         try {
             TapsellPlus.requestStandardBannerAd(activity, AdsConfig.TAPSELL_STANDARD_BANNER,
                     TapsellPlusBannerType.BANNER_320x50, new AdRequestCallback() {
@@ -62,16 +59,19 @@ public final class AdsManager {
                             }
                         }
                         @Override public void error(@NonNull String message) {
+                            standardBannerRequested = false;
                             Log.w(TAG, "Tapsell standard banner request failed: " + message);
                         }
                     });
         } catch (Throwable error) {
+            standardBannerRequested = false;
             Log.w(TAG, "Tapsell standard banner request failed safely", error);
         }
     }
 
     public static void loadNativeBanner(Activity activity, FrameLayout container) {
-        if (!AdsApplication.isTapsellReady() || activity.isFinishing() || activity.isDestroyed()) return;
+        if (!AdsApplication.isTapsellReady() || activity.isFinishing() || activity.isDestroyed() || nativeBannerRequested) return;
+        nativeBannerRequested = true;
         try {
             AdHolder holder = TapsellPlus.createAdHolder(activity, container, ir.tapsell.plus.R.layout.native_banner);
             TapsellPlus.requestNativeAd(activity, AdsConfig.TAPSELL_NATIVE_BANNER, new AdRequestCallback() {
@@ -93,10 +93,12 @@ public final class AdsManager {
                     }
                 }
                 @Override public void error(@NonNull String message) {
+                    nativeBannerRequested = false;
                     Log.w(TAG, "Tapsell native banner request failed: " + message);
                 }
             });
         } catch (Throwable error) {
+            nativeBannerRequested = false;
             Log.w(TAG, "Tapsell native banner request failed safely", error);
         }
     }
@@ -225,12 +227,14 @@ public final class AdsManager {
             if (standardBannerResponse != null) {
                 TapsellPlus.destroyStandardBanner(activity, standardBannerResponse, bannerContainer);
                 standardBannerResponse = null;
+                standardBannerRequested = false;
             }
         } catch (Throwable error) { Log.d(TAG, "Standard banner cleanup skipped", error); }
         try {
             if (nativeBannerResponse != null) {
                 TapsellPlus.destroyNativeBanner(activity, nativeBannerResponse);
                 nativeBannerResponse = null;
+                nativeBannerRequested = false;
             }
         } catch (Throwable error) { Log.d(TAG, "Native banner cleanup skipped", error); }
         try { Adivery.removePlacementListener(AdsConfig.ADIVERY_INTERSTITIAL); } catch (Throwable ignored) { }
