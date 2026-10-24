@@ -6,7 +6,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -18,7 +17,6 @@ import androidx.appcompat.widget.SwitchCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_WRITE_SETTINGS = 201;
     private SwitchCompat switchRotation;
     private TextView tvStatus;
     private Spinner spinnerMode;
@@ -99,9 +97,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (prefs != null && prefs.getBoolean("is_enabled", false) && canWriteSettings()) {
-            String mode = prefs.getString("rotation_mode", "auto");
-            applyMode(mode);
-            startRotationService();
+            applyMode(prefs.getString("rotation_mode", "auto"));
         }
         updateStatus();
     }
@@ -139,22 +135,20 @@ public class MainActivity extends AppCompatActivity {
 
         String mode = modeValues[spinnerMode.getSelectedItemPosition()];
         prefs.edit().putBoolean("is_enabled", true).putString("rotation_mode", mode).apply();
-        if (applyMode(mode)) {
-            startRotationService();
-            Toast.makeText(this, "کنترل چرخش فعال شد", Toast.LENGTH_SHORT).show();
-        } else {
+        if (!applyMode(mode)) {
             prefs.edit().putBoolean("is_enabled", false).apply();
             changingSwitch = true;
             switchRotation.setChecked(false);
             changingSwitch = false;
             Toast.makeText(this, "تغییر چرخش در این دستگاه مجاز نشد", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "کنترل چرخش فعال شد", Toast.LENGTH_SHORT).show();
         }
         updateStatus();
     }
 
     private void disableRotation() {
         prefs.edit().putBoolean("is_enabled", false).apply();
-        stopService(new Intent(this, RotationService.class));
         if (canWriteSettings() && prefs.getBoolean("original_settings_saved", false)) {
             try {
                 Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION,
@@ -193,15 +187,6 @@ public class MainActivity extends AppCompatActivity {
             return rotationSet && autoDisabled;
         } catch (SecurityException e) {
             return false;
-        }
-    }
-
-    private void startRotationService() {
-        Intent serviceIntent = new Intent(this, RotationService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
-        } else {
-            startService(serviceIntent);
         }
     }
 
