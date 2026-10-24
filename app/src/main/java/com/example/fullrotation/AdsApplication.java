@@ -12,6 +12,8 @@ import ir.tapsell.plus.model.AdNetworks;
 /** Initializes advertising SDKs once, without tying initialization to an Activity. */
 public final class AdsApplication extends Application {
     private static final String TAG = "AutoRotateAds";
+    private static volatile boolean tapsellReady;
+    public static boolean isTapsellReady() { return tapsellReady; }
 
     @Override
     public void onCreate() {
@@ -27,6 +29,7 @@ public final class AdsApplication extends Application {
             TapsellPlus.initialize(this, AdsConfig.TAPSELL_KEY, new TapsellPlusInitListener() {
                 @Override
                 public void onInitializeSuccess(AdNetworks adNetworks) {
+                    tapsellReady = true;
                     Log.d(TAG, "TapsellPlus initialized: " + adNetworks.name());
                 }
 
