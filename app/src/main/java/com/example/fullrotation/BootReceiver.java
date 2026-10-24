@@ -43,15 +43,8 @@ public class BootReceiver extends BroadcastReceiver {
                 Settings.System.putInt(context.getContentResolver(),
                         Settings.System.ACCELEROMETER_ROTATION, 0);
             }
-
-            Intent serviceIntent = new Intent(context, RotationService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent);
-            } else {
-                context.startService(serviceIntent);
-            }
         } catch (SecurityException ignored) {
-            // User can reopen the app and grant the special system-settings permission.
+            // Reopen the app and grant the special system-settings permission if needed.
         }
     }
 }
