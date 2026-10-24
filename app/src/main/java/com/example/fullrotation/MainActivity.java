@@ -1,214 +1,142 @@
 package com.example.fullrotation;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
-
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
+import android.view.accessibility.AccessibilityManager;
+import android.accessibilityservice.AccessibilityServiceInfo;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
+import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
-
-    private SwitchCompat switchRotation;
-    private TextView tvStatus;
-    private Spinner spinnerMode;
     private SharedPreferences prefs;
-    private boolean changingSwitch;
+    private LinearLayout page;
+    private boolean dark;
+    private String lang;
+    private int bg, card, fg, muted, accent;
+    private final String[] modes={"auto","portrait","reverse_portrait","landscape","reverse_landscape","reading","video"};
+    private String[] labels;
+    private TextView status;
 
-    private final String[] modeLabels = {
-            "چرخش خودکار با حسگر",
-            "عمودی",
-            "عمودی وارونه (۱۸۰ درجه)",
-            "افقی",
-            "افقی وارونه"
-    };
+    @Override public void onCreate(Bundle b) {
+        super.onCreate(b);
+        prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);
+        lang=prefs.getString("language","fa"); dark=prefs.getBoolean("dark_theme",false);
+        build();
+    }
+    private String t(String fa,String en){return lang.equals("fa")?fa:en;}
+    private void build(){
+        bg=dark?Color.rgb(12,12,12):Color.rgb(248,248,248);
+        card=dark?Color.rgb(30,30,30):Color.WHITE; fg=dark?Color.WHITE:Color.BLACK;
+        muted=dark?Color.LTGRAY:Color.DKGRAY; accent=dark?Color.WHITE:Color.BLACK;
+        labels=lang.equals("fa")?new String[]{"خودکار با حسگر","عمودی","عمودی معکوس","افقی","افقی معکوس","مطالعه (عمودی)","ویدئو (افقی)"}:
+            new String[]{"Auto sensor","Portrait","Reverse portrait","Landscape","Reverse landscape","Reading (portrait)","Video (landscape)"};
+        ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(bg);
+        page=new LinearLayout(this); page.setOrientation(LinearLayout.VERTICAL); page.setPadding(dp(18),dp(18),dp(18),dp(30)); scroll.addView(page);
+        TextView title=txt(t("چرخش صفحه","Screen Rotation"),28,true,fg); title.setGravity(Gravity.CENTER); add(title,0,8);
+        TextView desc=txt(t("کنترل هوشمند جهت صفحه","Smart orientation control"),14,false,muted); desc.setGravity(Gravity.CENTER); add(desc,0,18);
 
-    private final String[] modeValues = {"auto", "portrait", "reverse_portrait", "landscape", "reverse_landscape"};
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        switchRotation = findViewById(R.id.switchRotation);
-        tvStatus = findViewById(R.id.tvStatus);
-        spinnerMode = findViewById(R.id.spinnerMode);
-        Button buttonApply = findViewById(R.id.buttonApply);
-        Button buttonPermission = findViewById(R.id.buttonPermission);
-        prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, modeLabels);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerMode.setAdapter(adapter);
-
-        String savedMode = prefs.getString("rotation_mode", "auto");
-        spinnerMode.setSelection(indexOfMode(savedMode));
-        switchRotation.setChecked(prefs.getBoolean("is_enabled", false));
-        updateStatus();
-
-        switchRotation.setOnCheckedChangeListener((button, checked) -> {
-            if (changingSwitch) return;
-            if (checked) {
-                if (!canWriteSettings()) {
-                    changingSwitch = true;
-                    switchRotation.setChecked(false);
-                    changingSwitch = false;
-                    requestWriteSettings();
-                    return;
-                }
-                enableRotation();
-            } else {
-                disableRotation();
-            }
-        });
-
-        buttonApply.setOnClickListener(v -> {
-            String mode = modeValues[spinnerMode.getSelectedItemPosition()];
-            prefs.edit().putString("rotation_mode", mode).apply();
-            if (prefs.getBoolean("is_enabled", false)) {
-                if (!canWriteSettings()) {
-                    requestWriteSettings();
-                    return;
-                }
-                if (applyMode(mode)) {
-                    Toast.makeText(this, "حالت چرخش اعمال شد", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "گوشی اجازه تغییر تنظیم چرخش را نداد", Toast.LENGTH_LONG).show();
-                }
-            } else {
-                Toast.makeText(this, "حالت ذخیره شد؛ برای فعال شدن کلید را روشن کنید", Toast.LENGTH_SHORT).show();
-            }
+        section(t("کنترل عمومی","Global control"));
+        Switch enabled=new Switch(this); enabled.setText(t("فعال‌سازی کنترل چرخش","Enable rotation control")); enabled.setTextColor(fg);
+        enabled.setChecked(prefs.getBoolean("is_enabled",false)); cardView(enabled);
+        enabled.setOnCheckedChangeListener((v,on)->{
+            if(on&&!canWrite()){v.setChecked(false);requestWrite();return;}
+            prefs.edit().putBoolean("is_enabled",on).apply();
+            if(on){saveOriginal();apply(prefs.getString("rotation_mode","auto"));}
+            else restoreOriginal();
             updateStatus();
         });
 
-        buttonPermission.setOnClickListener(v -> requestWriteSettings());
+        section(t("حالت پیش‌فرض","Default orientation"));
+        Button mode=button(""); setModeButton(mode); add(mode,4,6);
+        mode.setOnClickListener(v->chooseMode(null));
+        Button apply=button(t("اعمال حالت انتخاب‌شده","Apply selected mode")); add(apply,4,6);
+        apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));});
+
+        section(t("قوانین اختصاصی برنامه‌ها","Per-app rules"));
+        add(txt(t("برای هر برنامه جهت جداگانه تعیین کن. برای اجرای خودکار باید سرویس دسترس‌پذیری را فعال کنی.","Choose a separate orientation for each app. Enable the Accessibility service for automatic switching."),14,false,muted),4,6);
+        Button choose=button(t("انتخاب برنامه و جهت","Choose app and orientation")); add(choose,4,6); choose.setOnClickListener(v->chooseApp());
+        Button access=button(t("فعال‌سازی سرویس دسترس‌پذیری","Enable Accessibility service")); add(access,4,6);
+        access.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
+        renderRules();
+
+        section(t("پنل شناور سریع","Floating quick panel"));
+        add(txt(t("پنل شناور تغییر سریع جهت؛ نیازمند مجوز نمایش روی برنامه‌ها.","Floating orientation controls; overlay permission is required."),14,false,muted),4,6);
+        Button floating=button(t("فعال‌سازی پنل شناور","Start floating panel")); add(floating,4,6);
+        floating.setOnClickListener(v->{
+            if(Build.VERSION.SDK_INT>=23&&!Settings.canDrawOverlays(this)){
+                startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())));
+            }else{Intent i=new Intent(this,QuickPanelService.class);if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);}
+        });
+
+        section(t("زبان و ظاهر","Language & appearance"));
+        Button language=button(lang.equals("fa")?"English":"فارسی"); add(language,4,6);
+        language.setOnClickListener(v->{prefs.edit().putString("language",lang.equals("fa")?"en":"fa").apply();recreate();});
+        Button theme=button(t(dark?"تغییر به تم سفید":"تغییر به تم سیاه",dark?"Switch to white theme":"Switch to black theme")); add(theme,4,6);
+        theme.setOnClickListener(v->{prefs.edit().putBoolean("dark_theme",!dark).apply();recreate();});
+
+        section(t("وضعیت و عیب‌یابی","Status & troubleshooting"));
+        status=txt("",14,true,fg); status.setPadding(dp(12),dp(12),dp(12),dp(12)); cardView(status);
+        Button permission=button(t("مجوز تنظیمات سیستم","System settings permission")); add(permission,4,6); permission.setOnClickListener(v->requestWrite());
+        Button battery=button(t("راهنمای باتری و پس‌زمینه","Battery/background help")); add(battery,4,6);
+        battery.setOnClickListener(v->new AlertDialog.Builder(this).setTitle(t("پایداری پس‌زمینه","Background reliability"))
+            .setMessage(t("برای اجرای قوانین برنامه‌ها، در تنظیمات باتری این برنامه را روی «بدون محدودیت» قرار بده. قوانین برنامه‌ها به سرویس دسترس‌پذیری و مجوز تنظیمات سیستم نیاز دارند.","Set battery usage to Unrestricted for reliable per-app rules. Per-app switching requires Accessibility and system settings permission."))
+            .setPositiveButton(t("تنظیمات باتری","Battery settings"),(d,w)->{try{startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));}catch(Exception ignored){}}).setNegativeButton(t("بستن","Close"),null).show());
+        updateStatus(); setContentView(scroll);
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (prefs != null && prefs.getBoolean("is_enabled", false) && canWriteSettings()) {
-            applyMode(prefs.getString("rotation_mode", "auto"));
-        }
-        updateStatus();
+    private void section(String s){TextView v=txt(s,18,true,fg);add(v,dp(20),dp(8));}
+    private TextView txt(String s,int size,boolean bold,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setGravity(lang.equals("fa")?Gravity.RIGHT:Gravity.LEFT);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(dark?Color.BLACK:Color.WHITE);b.setAllCaps(false);b.setBackground(shape(accent));return b;}
+    private void add(android.view.View v,int top,int bottom){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,top,0,bottom);page.addView(v,p);}
+    private void cardView(android.view.View v){LinearLayout box=new LinearLayout(this);box.setPadding(dp(12),dp(10),dp(12),dp(10));box.setBackground(shape(card));box.addView(v,new LinearLayout.LayoutParams(-1,-2));add(box,dp(4),dp(6));}
+    private GradientDrawable shape(int color){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(14));if(!dark)d.setStroke(dp(1),0xffdddddd);return d;}
+    private int dp(int x){return (int)(x*getResources().getDisplayMetrics().density+.5f);}
+    private void setModeButton(Button b){b.setText(labels[index(prefs.getString("rotation_mode","auto"))]+"  ▾");}
+    private int index(String m){for(int i=0;i<modes.length;i++)if(modes[i].equals(m))return i;return 0;}
+    private void chooseMode(String pkg){
+        String current=pkg==null?prefs.getString("rotation_mode","auto"):prefs.getString("rule_"+pkg,"auto");
+        new AlertDialog.Builder(this).setTitle(t("انتخاب جهت","Choose orientation")).setSingleChoiceItems(labels,index(current),(d,n)->{
+            if(pkg==null){prefs.edit().putString("rotation_mode",modes[n]).apply();if(prefs.getBoolean("is_enabled",false)&&canWrite())apply(modes[n]);}
+            else prefs.edit().putString("rule_"+pkg,modes[n]).apply();
+            d.dismiss();recreate();
+        }).setNegativeButton(t("لغو","Cancel"),null).show();
     }
-
-    private boolean canWriteSettings() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.System.canWrite(this);
+    private void chooseApp(){
+        Intent i=new Intent(Intent.ACTION_MAIN);i.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<android.content.pm.ResolveInfo> apps=getPackageManager().queryIntentActivities(i,0);
+        Collections.sort(apps,Comparator.comparing(a->String.valueOf(a.loadLabel(getPackageManager())).toLowerCase(Locale.ROOT)));
+        List<android.content.pm.ResolveInfo> filtered=new ArrayList<>();
+        for(android.content.pm.ResolveInfo a:apps)if(a.activityInfo!=null&&!a.activityInfo.packageName.equals(getPackageName()))filtered.add(a);
+        String[] names=new String[filtered.size()];for(int n=0;n<names.length;n++)names[n]=String.valueOf(filtered.get(n).loadLabel(getPackageManager()));
+        new AlertDialog.Builder(this).setTitle(t("انتخاب برنامه","Choose app")).setItems(names,(d,n)->chooseMode(filtered.get(n).activityInfo.packageName)).setNegativeButton(t("لغو","Cancel"),null).show();
     }
-
-    private void requestWriteSettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.System.canWrite(this)) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,
-                    Uri.parse("package:" + getPackageName()));
-            startActivity(intent);
-        } else {
-            Toast.makeText(this, "مجوز تغییر تنظیمات سیستم فعال است", Toast.LENGTH_SHORT).show();
-        }
+    private void renderRules(){
+        List<String> keys=new ArrayList<>();for(String k:prefs.getAll().keySet())if(k.startsWith("rule_"))keys.add(k.substring(5));Collections.sort(keys);
+        if(keys.isEmpty()){add(txt(t("هنوز قانونی ثبت نشده است.","No app-specific rules saved yet."),13,false,muted),4,4);return;}
+        for(String pkg:keys){String label=pkg;try{label=String.valueOf(getPackageManager().getApplicationLabel(getPackageManager().getApplicationInfo(pkg,0)));}catch(Exception ignored){}
+            final String target=pkg;Button b=button(label+" — "+labels[index(prefs.getString("rule_"+pkg,"auto"))]);add(b,3,3);b.setOnClickListener(v->chooseMode(target));}
     }
-
-    private void enableRotation() {
-        if (!canWriteSettings()) {
-            requestWriteSettings();
-            return;
-        }
-        if (!prefs.getBoolean("original_settings_saved", false)) {
-            int autoRotate = Settings.System.getInt(getContentResolver(),
-                    Settings.System.ACCELEROMETER_ROTATION, 1);
-            int userRotation = Settings.System.getInt(getContentResolver(),
-                    Settings.System.USER_ROTATION, 0);
-            prefs.edit()
-                    .putInt("original_accelerometer_rotation", autoRotate)
-                    .putInt("original_user_rotation", userRotation)
-                    .putBoolean("original_settings_saved", true)
-                    .apply();
-        }
-
-        String mode = modeValues[spinnerMode.getSelectedItemPosition()];
-        prefs.edit().putBoolean("is_enabled", true).putString("rotation_mode", mode).apply();
-        if (!applyMode(mode)) {
-            prefs.edit().putBoolean("is_enabled", false).apply();
-            changingSwitch = true;
-            switchRotation.setChecked(false);
-            changingSwitch = false;
-            Toast.makeText(this, "تغییر چرخش در این دستگاه مجاز نشد", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(this, "کنترل چرخش فعال شد", Toast.LENGTH_SHORT).show();
-        }
-        updateStatus();
+    private boolean canWrite(){return Build.VERSION.SDK_INT<23||Settings.System.canWrite(this);}
+    private void requestWrite(){if(Build.VERSION.SDK_INT>=23&&!Settings.System.canWrite(this))startActivity(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,Uri.parse("package:"+getPackageName())));else toast(t("مجوز تنظیمات فعال است","Settings permission granted"));}
+    private void saveOriginal(){if(prefs.getBoolean("original_settings_saved",false))return;prefs.edit().putInt("original_accelerometer_rotation",Settings.System.getInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1)).putInt("original_user_rotation",Settings.System.getInt(getContentResolver(),Settings.System.USER_ROTATION,0)).putBoolean("original_settings_saved",true).apply();}
+    private void restoreOriginal(){if(!canWrite()||!prefs.getBoolean("original_settings_saved",false))return;try{Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,prefs.getInt("original_user_rotation",0));Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,prefs.getInt("original_accelerometer_rotation",1));prefs.edit().putBoolean("original_settings_saved",false).apply();}catch(SecurityException ignored){}}
+    private boolean apply(String mode){
+        if(!canWrite())return false;try{if("auto".equals(mode))return Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
+            int r;switch(mode){case "landscape":case "video":r=1;break;case "reverse_portrait":r=2;break;case "reverse_landscape":r=3;break;default:r=0;}
+            boolean a=Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,r);boolean b=Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);return a&&b;
+        }catch(SecurityException e){return false;}
     }
-
-    private void disableRotation() {
-        prefs.edit().putBoolean("is_enabled", false).apply();
-        if (canWriteSettings() && prefs.getBoolean("original_settings_saved", false)) {
-            try {
-                Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION,
-                        prefs.getInt("original_user_rotation", 0));
-                Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION,
-                        prefs.getInt("original_accelerometer_rotation", 1));
-                prefs.edit().putBoolean("original_settings_saved", false).apply();
-            } catch (SecurityException ignored) {
-                Toast.makeText(this, "تنظیم قبلی بازیابی نشد؛ مجوز تنظیمات را بررسی کنید", Toast.LENGTH_LONG).show();
-            }
-        }
-        updateStatus();
-        Toast.makeText(this, "کنترل چرخش غیرفعال شد", Toast.LENGTH_SHORT).show();
-    }
-
-    private boolean applyMode(String mode) {
-        if (!canWriteSettings()) return false;
-        try {
-            if ("auto".equals(mode)) {
-                return Settings.System.putInt(getContentResolver(),
-                        Settings.System.ACCELEROMETER_ROTATION, 1);
-            }
-
-            int rotation;
-            switch (mode) {
-                case "portrait": rotation = 0; break;
-                case "landscape": rotation = 1; break;
-                case "reverse_portrait": rotation = 2; break;
-                case "reverse_landscape": rotation = 3; break;
-                default: rotation = 0;
-            }
-            boolean rotationSet = Settings.System.putInt(getContentResolver(),
-                    Settings.System.USER_ROTATION, rotation);
-            boolean autoDisabled = Settings.System.putInt(getContentResolver(),
-                    Settings.System.ACCELEROMETER_ROTATION, 0);
-            return rotationSet && autoDisabled;
-        } catch (SecurityException e) {
-            return false;
-        }
-    }
-
-    private int indexOfMode(String mode) {
-        for (int i = 0; i < modeValues.length; i++) {
-            if (modeValues[i].equals(mode)) return i;
-        }
-        return 0;
-    }
-
-    private void updateStatus() {
-        if (tvStatus == null || prefs == null) return;
-        boolean enabled = prefs.getBoolean("is_enabled", false);
-        if (enabled && !canWriteSettings()) {
-            tvStatus.setText("وضعیت: نیازمند مجوز تنظیمات سیستم");
-            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
-        } else if (enabled) {
-            tvStatus.setText("وضعیت: فعال — " + modeLabels[indexOfMode(prefs.getString("rotation_mode", "auto"))]);
-            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-        } else {
-            tvStatus.setText("وضعیت: غیرفعال");
-            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-        }
-    }
+    private boolean accessibilityEnabled(){AccessibilityManager m=(AccessibilityManager)getSystemService(ACCESSIBILITY_SERVICE);if(m==null)return false;for(AccessibilityServiceInfo i:m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK))if(i.getId()!=null&&i.getId().contains("PerAppRotationService"))return true;return false;}
+    private void updateStatus(){if(status==null)return;status.setText((prefs.getBoolean("is_enabled",false)?t("کنترل عمومی: فعال","Global control: ON"):t("کنترل عمومی: خاموش","Global control: OFF"))+"\n"+(canWrite()?t("مجوز تنظیمات: فعال","Settings permission: granted"):t("مجوز تنظیمات: لازم است","Settings permission: required"))+"\n"+(accessibilityEnabled()?t("قوانین برنامه‌ها: آماده","Per-app rules: ready"):t("قوانین برنامه‌ها: سرویس دسترس‌پذیری را فعال کن","Per-app rules: enable Accessibility service")));}
+    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
+    @Override protected void onResume(){super.onResume();if(prefs!=null&&prefs.getBoolean("is_enabled",false)&&canWrite())apply(prefs.getString("rotation_mode","auto"));if(status!=null)updateStatus();}
 }
