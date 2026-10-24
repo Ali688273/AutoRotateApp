@@ -26,7 +26,7 @@ public class QuickPanelService extends Service {
     private final String[] labels={"AUTO","PORTRAIT","LANDSCAPE","REVERSE P","REVERSE L"};
 
     @Override public void onCreate(){
-        super.onCreate();\n        android.content.SharedPreferences prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);\n        String saved=prefs.getString("rotation_mode","auto");\n        for(int n=0;n<modes.length;n++)if(modes[n].equals(saved)){index=n;break;}\n        startForegroundNotification();
+        super.onCreate();\n        android.content.SharedPreferences prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);\n        String saved=prefs.getString("rotation_mode","auto");\n        for(int n=0;n<modes.length;n++)if(modes[n].equals(saved)){index=n;break;}\n        if("reading".equals(saved))index=1; else if("video".equals(saved))index=2;\n        startForegroundNotification();
         if(Build.VERSION.SDK_INT>=23&&!Settings.canDrawOverlays(this)){stopSelf();return;}
         wm=(WindowManager)getSystemService(WINDOW_SERVICE); buildPanel();
     }
