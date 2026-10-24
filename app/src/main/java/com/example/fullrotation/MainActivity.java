@@ -190,8 +190,20 @@ public class MainActivity extends AppCompatActivity {
         if(pkg!=null){options=Arrays.copyOf(labels,labels.length+1);options[labels.length]=t("استفاده از حالت پیش‌فرض","Use global default");}
         final String[] choices=options;
         new AlertDialog.Builder(this).setTitle(t("انتخاب جهت","Choose orientation")).setSingleChoiceItems(choices,selectedIndex,(d,n)->{
-            if(pkg==null){prefs.edit().putString("rotation_mode",modes[n]).apply();if(prefs.getBoolean("is_enabled",false)&&canWrite())apply(modes[n]);}
-            else if(n==modes.length)prefs.edit().remove("rule_"+pkg).apply();
+            if(pkg==null){
+                String selectedMode=modes[n];
+                prefs.edit().putString("rotation_mode",selectedMode).apply();
+                if(!canWrite()){
+                    d.dismiss();
+                    requestWrite();
+                    toast(t("برای چرخش کل گوشی، مجوز تغییر تنظیمات سیستم را بده و دوباره حالت را انتخاب کن.","To rotate the whole phone, grant Modify System Settings permission, then select the mode again."));
+                    return;
+                }
+                saveOriginal();
+                prefs.edit().putBoolean("is_enabled",true).apply();
+                boolean applied=apply(selectedMode);
+                if(!applied)toast(t("تنظیم سیستم اعمال نشد؛ مجوز تغییر تنظیمات را بررسی کن.","System orientation was not applied; check Modify System Settings permission."));
+            } else if(n==modes.length)prefs.edit().remove("rule_"+pkg).apply();
             else prefs.edit().putString("rule_"+pkg,modes[n]).apply();
             d.dismiss();recreate();
         }).setNegativeButton(t("لغو","Cancel"),null).show();
