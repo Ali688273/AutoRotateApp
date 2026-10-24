@@ -31,7 +31,11 @@ public class PerAppRotationService extends AccessibilityService {
 
     private boolean applyMode(String mode) {
         try {
-            if ("auto".equals(mode)) return Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 1);
+            if ("auto".equals(mode)) {
+                boolean reset = Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, 0);
+                boolean sensor = Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 1);
+                return reset && sensor && Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
+            }
             int rotation;
             switch (mode) {
                 case "landscape": case "video": rotation = 1; break;
