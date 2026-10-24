@@ -17,7 +17,6 @@ public class BootReceiver extends BroadcastReceiver {
         String mode=prefs.getString("rotation_mode","auto");
         try {
             if ("auto".equals(mode)) {
-                Settings.System.putInt(context.getContentResolver(),Settings.System.USER_ROTATION,0);
                 Settings.System.putInt(context.getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
             } else {
                 int rotation;
@@ -27,8 +26,9 @@ public class BootReceiver extends BroadcastReceiver {
                     case "reverse_landscape": rotation=3; break;
                     default: rotation=0;
                 }
-                Settings.System.putInt(context.getContentResolver(),Settings.System.USER_ROTATION,rotation);
+                // Disable sensor rotation first so the requested angle is applied.
                 Settings.System.putInt(context.getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);
+                Settings.System.putInt(context.getContentResolver(),Settings.System.USER_ROTATION,rotation);
             }
         } catch(SecurityException ignored) {
             // Keep the saved preference; the app will ask for permission when reopened.
