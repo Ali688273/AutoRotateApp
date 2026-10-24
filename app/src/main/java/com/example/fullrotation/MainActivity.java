@@ -26,6 +26,9 @@ public class MainActivity extends AppCompatActivity {
     private final String[] modes={"auto","portrait","reverse_portrait","landscape","reverse_landscape","reading","video"};
     private String[] labels;
     private TextView status;
+    private FrameLayout standardBannerContainer;
+    private FrameLayout nativeBannerContainer;
+    private long lastInterstitialActionAt;
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -46,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(bg);
         page=new LinearLayout(this); page.setOrientation(LinearLayout.VERTICAL); page.setPadding(dp(18),dp(18),dp(18),dp(30)); scroll.addView(page);
         TextView title=txt(t("چرخش صفحه","Screen Rotation"),28,true,fg); title.setGravity(Gravity.CENTER); add(title,0,8);
-        TextView desc=txt(t("کنترل هوشمند جهت صفحه","Smart orientation control"),14,false,muted); desc.setGravity(Gravity.CENTER); add(desc,0,18);
+        TextView desc=txt(t("کنترل هوشمند جهت صفحه","Smart orientation control"),14,false,muted); desc.setGravity(Gravity.CENTER); add(desc,0,18);\n        nativeBannerContainer = new FrameLayout(this);\n        LinearLayout.LayoutParams nativeAdParams = new LinearLayout.LayoutParams(-1, -2);\n        nativeAdParams.setMargins(0, dp(4), 0, dp(10));\n        page.addView(nativeBannerContainer, nativeAdParams);
 
         section(t("کنترل عمومی","Global control"));
         Switch enabled=new Switch(this); enabled.setText(t("فعال‌سازی کنترل چرخش","Enable rotation control")); enabled.setTextColor(fg);
@@ -63,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         Button mode=button(""); setModeButton(mode); add(mode,4,6);
         mode.setOnClickListener(v->chooseMode(null));
         Button apply=button(t("اعمال حالت انتخاب‌شده","Apply selected mode")); add(apply,4,6);
-        apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));});
+        apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));\n            if(ok && System.currentTimeMillis()-lastInterstitialActionAt >= 10*60*1000L){ lastInterstitialActionAt=System.currentTimeMillis(); AdsManager.maybeShowInterstitial(this); }});
 
         section(t("قوانین اختصاصی برنامه‌ها","Per-app rules"));
         add(txt(t("ابتدا کنترل عمومی را فعال کن؛ سپس برای هر برنامه جهت جداگانه تعیین کن و سرویس دسترس‌پذیری را هم فعال کن.","First enable global rotation control, then set a separate orientation for each app and enable the Accessibility service."),14,false,muted),4,6);
@@ -95,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         battery.setOnClickListener(v->new AlertDialog.Builder(this).setTitle(t("پایداری پس‌زمینه","Background reliability"))
             .setMessage(t("برای اجرای قوانین برنامه‌ها، در تنظیمات باتری این برنامه را روی «بدون محدودیت» قرار بده. قوانین برنامه‌ها به سرویس دسترس‌پذیری و مجوز تنظیمات سیستم نیاز دارند.","Set battery usage to Unrestricted for reliable per-app rules. Per-app switching requires Accessibility and system settings permission."))
             .setPositiveButton(t("تنظیمات باتری","Battery settings"),(d,w)->{try{startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));}catch(Exception ignored){}}).setNegativeButton(t("بستن","Close"),null).show());
-        updateStatus(); setContentView(scroll);
+        updateStatus();\n        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(bg);\n        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));\n        standardBannerContainer = new FrameLayout(this);\n        standardBannerContainer.setMinimumHeight(dp(50));\n        root.addView(standardBannerContainer, new LinearLayout.LayoutParams(-1, -2));\n        setContentView(root);\n        AdsManager.loadNativeBanner(this, nativeBannerContainer);\n        AdsManager.loadStandardBanner(this, standardBannerContainer);\n        AdsManager.prepareFullScreen(this);
     }
     private void section(String s){TextView v=txt(s,18,true,fg);add(v,dp(20),dp(8));}
     private TextView txt(String s,int size,boolean bold,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setGravity(lang.equals("fa")?Gravity.RIGHT:Gravity.LEFT);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
@@ -146,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
         }catch(SecurityException e){return false;}
     }
     private boolean accessibilityEnabled(){AccessibilityManager m=(AccessibilityManager)getSystemService(ACCESSIBILITY_SERVICE);if(m==null)return false;for(AccessibilityServiceInfo i:m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK))if(i.getId()!=null&&i.getId().contains("PerAppRotationService"))return true;return false;}
-    private void updateStatus(){if(status==null)return;status.setText((prefs.getBoolean("is_enabled",false)?t("کنترل عمومی: فعال","Global control: ON"):t("کنترل عمومی: خاموش","Global control: OFF"))+"\n"+(canWrite()?t("مجوز تنظیمات: فعال","Settings permission: granted"):t("مجوز تنظیمات: لازم است","Settings permission: required"))+"\n"+(accessibilityEnabled()?t("قوانین برنامه‌ها: آماده","Per-app rules: ready"):t("قوانین برنامه‌ها: سرویس دسترس‌پذیری را فعال کن","Per-app rules: enable Accessibility service")));}
+    @Override protected void onPause(){ AdsManager.onActivityPaused(); super.onPause(); }\n    @Override protected void onResume(){ super.onResume(); if(prefs!=null&&prefs.getBoolean("is_enabled",false)&&canWrite())apply(prefs.getString("rotation_mode","auto")); if(status!=null)updateStatus(); AdsManager.onActivityResumed(this); }\n    @Override protected void onDestroy(){ AdsManager.cleanup(this, standardBannerContainer); super.onDestroy(); }\n    private void updateStatus(){if(status==null)return;status.setText((prefs.getBoolean("is_enabled",false)?t("کنترل عمومی: فعال","Global control: ON"):t("کنترل عمومی: خاموش","Global control: OFF"))+"\n"+(canWrite()?t("مجوز تنظیمات: فعال","Settings permission: granted"):t("مجوز تنظیمات: لازم است","Settings permission: required"))+"\n"+(accessibilityEnabled()?t("قوانین برنامه‌ها: آماده","Per-app rules: ready"):t("قوانین برنامه‌ها: سرویس دسترس‌پذیری را فعال کن","Per-app rules: enable Accessibility service")));}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
     @Override protected void onResume(){super.onResume();if(prefs!=null&&prefs.getBoolean("is_enabled",false)&&canWrite())apply(prefs.getString("rotation_mode","auto"));if(status!=null)updateStatus();}
 }
