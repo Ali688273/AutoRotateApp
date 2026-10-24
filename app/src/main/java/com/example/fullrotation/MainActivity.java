@@ -40,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
         muted=dark?Color.LTGRAY:Color.DKGRAY; accent=dark?Color.WHITE:Color.BLACK;
         labels=lang.equals("fa")?new String[]{"خودکار با حسگر","عمودی","عمودی معکوس","افقی","افقی معکوس","مطالعه (عمودی)","ویدئو (افقی)"}:
             new String[]{"Auto sensor","Portrait","Reverse portrait","Landscape","Reverse landscape","Reading (portrait)","Video (landscape)"};
+        if(Build.VERSION.SDK_INT>=21){getWindow().setStatusBarColor(dark?Color.BLACK:Color.WHITE);getWindow().setNavigationBarColor(dark?Color.BLACK:Color.WHITE);}
+        if(Build.VERSION.SDK_INT>=23){int flags=dark?0:android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;if(Build.VERSION.SDK_INT>=26&&!dark)flags|=android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;getWindow().getDecorView().setSystemUiVisibility(flags);}
         ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(bg);
         page=new LinearLayout(this); page.setOrientation(LinearLayout.VERTICAL); page.setPadding(dp(18),dp(18),dp(18),dp(30)); scroll.addView(page);
         TextView title=txt(t("چرخش صفحه","Screen Rotation"),28,true,fg); title.setGravity(Gravity.CENTER); add(title,0,8);
@@ -73,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         add(txt(t("پنل شناور تغییر سریع جهت؛ نیازمند مجوز نمایش روی برنامه‌ها.","Floating orientation controls; overlay permission is required."),14,false,muted),4,6);
         Button floating=button(t("فعال‌سازی پنل شناور","Start floating panel")); add(floating,4,6);
         floating.setOnClickListener(v->{
+            if(!canWrite()){requestWrite();return;}
             if(Build.VERSION.SDK_INT>=23&&!Settings.canDrawOverlays(this)){
                 startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())));
             }else{Intent i=new Intent(this,QuickPanelService.class);if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);}
