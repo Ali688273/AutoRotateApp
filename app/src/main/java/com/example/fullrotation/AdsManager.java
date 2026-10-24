@@ -181,7 +181,28 @@ public final class AdsManager {
         } catch (Throwable ignored) { }
     }
 
-    private static boolean isRewardBypassActive(Activity activity) {\n        return activity.getSharedPreferences("ad_prefs", Activity.MODE_PRIVATE)\n                .getLong("fullscreen_ads_disabled_until", 0L) > System.currentTimeMillis();\n    }\n\n    public static void showRewardedAd(Activity activity) {\n        if (activity.isFinishing() || activity.isDestroyed()) return;\n        try {\n            String placement = AdsConfig.ADIVERY_REWARDED;\n            if (Adivery.isLoaded(placement)) {\n                Adivery.showAd(placement);\n            } else {\n                Adivery.prepareRewardedAd(activity, placement);\n                android.widget.Toast.makeText(activity, "تبلیغ در حال آماده‌شدن است؛ چند لحظه دیگر دوباره امتحان کن.", android.widget.Toast.LENGTH_LONG).show();\n            }\n        } catch (Throwable error) {\n            Log.w(TAG, "Rewarded ad skipped safely", error);\n            android.widget.Toast.makeText(activity, "فعلاً تبلیغ جایزه‌ای در دسترس نیست.", android.widget.Toast.LENGTH_SHORT).show();\n        }\n    }\n\n    public static void maybeShowInterstitial(Activity activity) {
+    private static boolean isRewardBypassActive(Activity activity) {
+        return activity.getSharedPreferences("ad_prefs", Activity.MODE_PRIVATE)
+                .getLong("fullscreen_ads_disabled_until", 0L) > System.currentTimeMillis();
+    }
+
+    public static void showRewardedAd(Activity activity) {
+        if (activity.isFinishing() || activity.isDestroyed()) return;
+        try {
+            String placement = AdsConfig.ADIVERY_REWARDED;
+            if (Adivery.isLoaded(placement)) {
+                Adivery.showAd(placement);
+            } else {
+                Adivery.prepareRewardedAd(activity, placement);
+                android.widget.Toast.makeText(activity, "تبلیغ در حال آماده‌شدن است؛ چند لحظه دیگر دوباره امتحان کن.", android.widget.Toast.LENGTH_LONG).show();
+            }
+        } catch (Throwable error) {
+            Log.w(TAG, "Rewarded ad skipped safely", error);
+            android.widget.Toast.makeText(activity, "فعلاً تبلیغ جایزه‌ای در دسترس نیست.", android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public static void maybeShowInterstitial(Activity activity) {
         if (activity.isFinishing() || activity.isDestroyed()
                 || System.currentTimeMillis() - lastFullScreenAt < 10 * 60 * 1000L) return;
         try {
