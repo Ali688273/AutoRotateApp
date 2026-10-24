@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">چرخش صفحه</string>
-    <string name="accessibility_description">Apply the saved screen orientation rule when the foreground app changes.</string>
+    <string name="accessibility_description">با تغییر برنامهٔ فعال، قانون ذخیره‌شدهٔ جهت صفحه را اعمال می‌کند.</string>
 </resources>
