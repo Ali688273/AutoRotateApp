@@ -26,7 +26,7 @@ public class QuickPanelService extends Service {
     private final String[] labels={"AUTO","PORTRAIT","LANDSCAPE","REVERSE P","REVERSE L"};
 
     @Override public void onCreate(){
-        super.onCreate(); startForegroundNotification();
+        super.onCreate();\n        android.content.SharedPreferences prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);\n        String saved=prefs.getString("rotation_mode","auto");\n        for(int n=0;n<modes.length;n++)if(modes[n].equals(saved)){index=n;break;}\n        startForegroundNotification();
         if(Build.VERSION.SDK_INT>=23&&!Settings.canDrawOverlays(this)){stopSelf();return;}
         wm=(WindowManager)getSystemService(WINDOW_SERVICE); buildPanel();
     }
@@ -41,8 +41,8 @@ public class QuickPanelService extends Service {
         panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(10,8,10,8);
         GradientDrawable bg=new GradientDrawable();bg.setColor(Color.BLACK);bg.setCornerRadius(24);bg.setStroke(2,Color.WHITE);panel.setBackground(bg);
         TextView title=new TextView(this);title.setText("↻ ROTATION");title.setTextColor(Color.WHITE);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.setGravity(Gravity.CENTER);panel.addView(title);
-        Button cycle=new Button(this);cycle.setText("AUTO ↻");cycle.setAllCaps(false);panel.addView(cycle);
-        cycle.setOnClickListener(v->{index=(index+1)%modes.length;cycle.setText(labels[index]+"  ↻");apply(modes[index]);});
+        Button cycle=new Button(this);cycle.setText(labels[index]+" ↻");cycle.setAllCaps(false);panel.addView(cycle);
+        cycle.setOnClickListener(v->{index=(index+1)%modes.length;cycle.setText(labels[index]+"  ↻");\n            android.content.SharedPreferences prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);\n            prefs.edit().putString("rotation_mode",modes[index]).putBoolean("is_enabled",true).apply();\n            if(!prefs.getBoolean("original_settings_saved",false)){\n                prefs.edit().putInt("original_accelerometer_rotation",Settings.System.getInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1))\n                    .putInt("original_user_rotation",Settings.System.getInt(getContentResolver(),Settings.System.USER_ROTATION,0)).putBoolean("original_settings_saved",true).apply();\n            }\n            apply(modes[index]);});
         Button close=new Button(this);close.setText("×");close.setAllCaps(false);panel.addView(close);close.setOnClickListener(v->stopSelf());
         int type=Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE;
         WindowManager.LayoutParams p=new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.WRAP_CONTENT,type,
