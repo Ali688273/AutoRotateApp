@@ -49,7 +49,11 @@ public class MainActivity extends AppCompatActivity {
         ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(bg);
         page=new LinearLayout(this); page.setOrientation(LinearLayout.VERTICAL); page.setPadding(dp(18),dp(18),dp(18),dp(30)); scroll.addView(page);
         TextView title=txt(t("چرخش صفحه","Screen Rotation"),28,true,fg); title.setGravity(Gravity.CENTER); add(title,0,8);
-        TextView desc=txt(t("کنترل هوشمند جهت صفحه","Smart orientation control"),14,false,muted); desc.setGravity(Gravity.CENTER); add(desc,0,18);\n        nativeBannerContainer = new FrameLayout(this);\n        LinearLayout.LayoutParams nativeAdParams = new LinearLayout.LayoutParams(-1, -2);\n        nativeAdParams.setMargins(0, dp(4), 0, dp(10));\n        page.addView(nativeBannerContainer, nativeAdParams);
+        TextView desc=txt(t("کنترل هوشمند جهت صفحه","Smart orientation control"),14,false,muted); desc.setGravity(Gravity.CENTER); add(desc,0,18);
+        nativeBannerContainer = new FrameLayout(this);
+        LinearLayout.LayoutParams nativeAdParams = new LinearLayout.LayoutParams(-1, -2);
+        nativeAdParams.setMargins(0, dp(4), 0, dp(10));
+        page.addView(nativeBannerContainer, nativeAdParams);
 
         section(t("کنترل عمومی","Global control"));
         Switch enabled=new Switch(this); enabled.setText(t("فعال‌سازی کنترل چرخش","Enable rotation control")); enabled.setTextColor(fg);
@@ -66,7 +70,8 @@ public class MainActivity extends AppCompatActivity {
         Button mode=button(""); setModeButton(mode); add(mode,4,6);
         mode.setOnClickListener(v->chooseMode(null));
         Button apply=button(t("اعمال حالت انتخاب‌شده","Apply selected mode")); add(apply,4,6);
-        apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));\n            if(ok && System.currentTimeMillis()-lastInterstitialActionAt >= 10*60*1000L){ lastInterstitialActionAt=System.currentTimeMillis(); AdsManager.maybeShowInterstitial(this); }});
+        apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));
+            if(ok && System.currentTimeMillis()-lastInterstitialActionAt >= 10*60*1000L){ lastInterstitialActionAt=System.currentTimeMillis(); AdsManager.maybeShowInterstitial(this); }});
 
         section(t("قوانین اختصاصی برنامه‌ها","Per-app rules"));
         add(txt(t("ابتدا کنترل عمومی را فعال کن؛ سپس برای هر برنامه جهت جداگانه تعیین کن و سرویس دسترس‌پذیری را هم فعال کن.","First enable global rotation control, then set a separate orientation for each app and enable the Accessibility service."),14,false,muted),4,6);
