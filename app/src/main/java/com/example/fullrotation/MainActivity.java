@@ -108,10 +108,11 @@ public class MainActivity extends AppCompatActivity {
     private int index(String m){for(int i=0;i<modes.length;i++)if(modes[i].equals(m))return i;return 0;}
     private void chooseMode(String pkg){
         String current=pkg==null?prefs.getString("rotation_mode","auto"):(prefs.contains("rule_"+pkg)?prefs.getString("rule_"+pkg,"auto"):prefs.getString("rotation_mode","auto"));
+        int selectedIndex = pkg != null && !prefs.contains("rule_"+pkg) ? modes.length : index(current);
         String[] options=labels;
         if(pkg!=null){options=Arrays.copyOf(labels,labels.length+1);options[labels.length]=t("استفاده از حالت پیش‌فرض","Use global default");}
         final String[] choices=options;
-        new AlertDialog.Builder(this).setTitle(t("انتخاب جهت","Choose orientation")).setSingleChoiceItems(choices,index(current),(d,n)->{
+        new AlertDialog.Builder(this).setTitle(t("انتخاب جهت","Choose orientation")).setSingleChoiceItems(choices,selectedIndex,(d,n)->{
             if(pkg==null){prefs.edit().putString("rotation_mode",modes[n]).apply();if(prefs.getBoolean("is_enabled",false)&&canWrite())apply(modes[n]);}
             else if(n==modes.length)prefs.edit().remove("rule_"+pkg).apply();
             else prefs.edit().putString("rule_"+pkg,modes[n]).apply();
@@ -124,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
         Collections.sort(apps,Comparator.comparing(a->String.valueOf(a.loadLabel(getPackageManager())).toLowerCase(Locale.ROOT)));
         List<android.content.pm.ResolveInfo> filtered=new ArrayList<>();
         for(android.content.pm.ResolveInfo a:apps)if(a.activityInfo!=null&&!a.activityInfo.packageName.equals(getPackageName()))filtered.add(a);
+        if(filtered.isEmpty()){toast(t("برنامه‌ای برای انتخاب پیدا نشد.","No launchable apps were found."));return;}
         String[] names=new String[filtered.size()];for(int n=0;n<names.length;n++)names[n]=String.valueOf(filtered.get(n).loadLabel(getPackageManager()));
         new AlertDialog.Builder(this).setTitle(t("انتخاب برنامه","Choose app")).setItems(names,(d,n)->chooseMode(filtered.get(n).activityInfo.packageName)).setNegativeButton(t("لغو","Cancel"),null).show();
     }
