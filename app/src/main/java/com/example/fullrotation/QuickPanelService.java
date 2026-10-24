@@ -81,7 +81,7 @@ public class QuickPanelService extends Service {
     private void apply(String mode){
         if(Build.VERSION.SDK_INT>=23&&!Settings.System.canWrite(this))return;
         try{
-            if("auto".equals(mode))Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
+            if("auto".equals(mode)){Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,0);Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);}
             else{int r;switch(mode){case "landscape":r=1;break;case "reverse_portrait":r=2;break;case "reverse_landscape":r=3;break;default:r=0;}
                 Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,r);Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);}
         }catch(SecurityException ignored){}
