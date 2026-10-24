@@ -104,8 +104,12 @@ public class MainActivity extends AppCompatActivity {
     private int index(String m){for(int i=0;i<modes.length;i++)if(modes[i].equals(m))return i;return 0;}
     private void chooseMode(String pkg){
         String current=pkg==null?prefs.getString("rotation_mode","auto"):prefs.getString("rule_"+pkg,"auto");
-        new AlertDialog.Builder(this).setTitle(t("انتخاب جهت","Choose orientation")).setSingleChoiceItems(labels,index(current),(d,n)->{
+        String[] options=labels;
+        if(pkg!=null){options=Arrays.copyOf(labels,labels.length+1);options[labels.length]=t("استفاده از حالت پیش‌فرض","Use global default");}
+        final String[] choices=options;
+        new AlertDialog.Builder(this).setTitle(t("انتخاب جهت","Choose orientation")).setSingleChoiceItems(choices,index(current),(d,n)->{
             if(pkg==null){prefs.edit().putString("rotation_mode",modes[n]).apply();if(prefs.getBoolean("is_enabled",false)&&canWrite())apply(modes[n]);}
+            else if(n==modes.length)prefs.edit().remove("rule_"+pkg).apply();
             else prefs.edit().putString("rule_"+pkg,modes[n]).apply();
             d.dismiss();recreate();
         }).setNegativeButton(t("لغو","Cancel"),null).show();
