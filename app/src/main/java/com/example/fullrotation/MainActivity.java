@@ -214,7 +214,11 @@ public class MainActivity extends AppCompatActivity {
                 saveOriginal();
                 prefs.edit().putBoolean("is_enabled",true).apply();
                 boolean applied=apply(selectedMode);
-                if(!applied)toast(t("تنظیم سیستم اعمال نشد؛ مجوز تغییر تنظیمات را بررسی کن.","System orientation was not applied; check Modify System Settings permission."));
+                if(!applied){
+                    prefs.edit().putBoolean("is_enabled",false).apply();
+                    restoreOriginal();
+                    toast(t("تنظیم سیستم اعمال نشد؛ مجوز تغییر تنظیمات را بررسی کن.","System orientation was not applied; check Modify System Settings permission."));
+                }
             } else if(n==modes.length)prefs.edit().remove("rule_"+pkg).apply();
             else prefs.edit().putString("rule_"+pkg,modes[n]).apply();
             d.dismiss();recreate();
