@@ -107,7 +107,16 @@ public class MainActivity extends AppCompatActivity {
         battery.setOnClickListener(v->new AlertDialog.Builder(this).setTitle(t("پایداری پس‌زمینه","Background reliability"))
             .setMessage(t("برای اجرای قوانین برنامه‌ها، در تنظیمات باتری این برنامه را روی «بدون محدودیت» قرار بده. قوانین برنامه‌ها به سرویس دسترس‌پذیری و مجوز تنظیمات سیستم نیاز دارند.","Set battery usage to Unrestricted for reliable per-app rules. Per-app switching requires Accessibility and system settings permission."))
             .setPositiveButton(t("تنظیمات باتری","Battery settings"),(d,w)->{try{startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));}catch(Exception ignored){}}).setNegativeButton(t("بستن","Close"),null).show());
-        updateStatus();\n        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(bg);\n        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));\n        standardBannerContainer = new FrameLayout(this);\n        standardBannerContainer.setMinimumHeight(dp(50));\n        root.addView(standardBannerContainer, new LinearLayout.LayoutParams(-1, -2));\n        setContentView(root);\n        AdsManager.loadNativeBanner(this, nativeBannerContainer);\n        AdsManager.loadStandardBanner(this, standardBannerContainer);\n        AdsManager.prepareFullScreen(this);
+        updateStatus();
+        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(bg);
+        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
+        standardBannerContainer = new FrameLayout(this);
+        standardBannerContainer.setMinimumHeight(dp(50));
+        root.addView(standardBannerContainer, new LinearLayout.LayoutParams(-1, -2));
+        setContentView(root);
+        AdsManager.loadNativeBanner(this, nativeBannerContainer);
+        AdsManager.loadStandardBanner(this, standardBannerContainer);
+        AdsManager.prepareFullScreen(this);
     }
     private void section(String s){TextView v=txt(s,18,true,fg);add(v,dp(20),dp(8));}
     private TextView txt(String s,int size,boolean bold,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setGravity(lang.equals("fa")?Gravity.RIGHT:Gravity.LEFT);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
