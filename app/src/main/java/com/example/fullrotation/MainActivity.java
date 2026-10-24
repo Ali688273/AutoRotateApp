@@ -39,28 +39,9 @@ public class MainActivity extends AppCompatActivity {
         prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);
         lang=prefs.getString("language","fa"); dark=prefs.getBoolean("dark_theme",false);
         setTheme(dark ? R.style.Theme_AutoRotateApp_Dark : R.style.Theme_AutoRotateApp);
-        applyActivityOrientation();
         build();
     }
     private String t(String fa,String en){return lang.equals("fa")?fa:en;}
-    private void applyActivityOrientation(){
-        boolean enabled=prefs!=null && prefs.getBoolean("is_enabled",false);
-        String mode=prefs==null?"auto":prefs.getString("rotation_mode","auto");
-        if(!enabled){setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);return;}
-        switch(mode){
-            case "portrait": case "reading":
-                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); break;
-            case "reverse_portrait":
-                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT); break;
-            case "landscape": case "video":
-                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); break;
-            case "reverse_landscape":
-                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE); break;
-            default:
-                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR); break;
-        }
-    }
-
     private void build(){
         bg=dark?Color.rgb(12,12,12):Color.rgb(248,248,248);
         card=dark?Color.rgb(30,30,30):Color.WHITE; fg=dark?Color.WHITE:Color.BLACK;
@@ -114,7 +95,6 @@ public class MainActivity extends AppCompatActivity {
             prefs.edit().putBoolean("is_enabled",on).apply();
             if(on){saveOriginal();apply(prefs.getString("rotation_mode","auto"));}
             else restoreOriginal();
-            applyActivityOrientation();
             updateStatus();
         });
 
@@ -270,7 +250,8 @@ public class MainActivity extends AppCompatActivity {
         try{
             if("auto".equals(mode)){
                 // Sensor mode only needs the accelerometer switch; do not force a base angle.
-                return Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
+                boolean written=Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
+                return written && Settings.System.getInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0)==1;
             }
             int rotation;
             switch(mode){
@@ -282,7 +263,9 @@ public class MainActivity extends AppCompatActivity {
             // Disable sensor rotation first; otherwise Android may ignore USER_ROTATION.
             boolean sensorOff=Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);
             boolean angleSet=Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,rotation);
-            return sensorOff && angleSet;
+            return sensorOff && angleSet
+                && Settings.System.getInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1)==0
+                && Settings.System.getInt(getContentResolver(),Settings.System.USER_ROTATION,-1)==rotation;
         }catch(SecurityException e){return false;}
     }
     private boolean accessibilityEnabled(){AccessibilityManager m=(AccessibilityManager)getSystemService(ACCESSIBILITY_SERVICE);if(m==null)return false;for(AccessibilityServiceInfo i:m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK))if(i.getId()!=null&&i.getId().contains("PerAppRotationService"))return true;return false;}
