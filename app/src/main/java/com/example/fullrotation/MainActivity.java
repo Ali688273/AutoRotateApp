@@ -55,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<3;i++){
             tabScrolls[i]=new ScrollView(this);
             tabScrolls[i].setFillViewport(true);
+            // Keep inactive pages out of the first layout pass. This avoids weighted pages
+            // briefly sharing the available height during activity recreation/rotation.
+            tabScrolls[i].setVisibility(i == 0 ? View.VISIBLE : View.GONE);
             tabScrolls[i].setBackgroundColor(bg);
             pages[i]=new LinearLayout(this);
             pages[i].setOrientation(LinearLayout.VERTICAL);
@@ -251,7 +254,13 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean accessibilityEnabled(){AccessibilityManager m=(AccessibilityManager)getSystemService(ACCESSIBILITY_SERVICE);if(m==null)return false;for(AccessibilityServiceInfo i:m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK))if(i.getId()!=null&&i.getId().contains("PerAppRotationService"))return true;return false;}
     @Override protected void onPause(){ AdsManager.onActivityPaused(); super.onPause(); }
-    @Override protected void onResume(){ super.onResume(); if(prefs!=null&&prefs.getBoolean("is_enabled",false)&&canWrite())apply(prefs.getString("rotation_mode","auto")); if(status!=null)updateStatus(); }
+    @Override protected void onResume(){
+        super.onResume();
+        // Do not rewrite USER_ROTATION on every resume/configuration recreation.
+        // Applying the same global rotation here can trigger another display relayout
+        // while Android is still rebuilding the Activity after a 180-degree turn.
+        if(status!=null)updateStatus();
+    }
     @Override protected void onDestroy(){ AdsManager.cleanup(this, standardBannerContainer); super.onDestroy(); }
     private void updateStatus(){if(status==null)return;status.setText((prefs.getBoolean("is_enabled",false)?t("کنترل عمومی: فعال","Global control: ON"):t("کنترل عمومی: خاموش","Global control: OFF"))+"\n"+(canWrite()?t("مجوز تنظیمات: فعال","Settings permission: granted"):t("مجوز تنظیمات: لازم است","Settings permission: required"))+"\n"+(accessibilityEnabled()?t("قوانین برنامه‌ها: آماده","Per-app rules: ready"):t("قوانین برنامه‌ها: سرویس دسترس‌پذیری را فعال کن","Per-app rules: enable Accessibility service")));}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
