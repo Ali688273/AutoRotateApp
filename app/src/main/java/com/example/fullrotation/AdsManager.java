@@ -30,6 +30,8 @@ public final class AdsManager {
     private static String interstitialResponse;
     private static long lastFullScreenAt;
     private static long lastPauseAt;
+    private static final long APP_STARTED_AT = System.currentTimeMillis();
+    private static final long REWARDED_BYPASS_MS = 24 * 60 * 60 * 1000L;
     private static boolean appOpenPrepared;
 
     private AdsManager() {}
@@ -129,6 +131,22 @@ public final class AdsManager {
                 }
             });
             Adivery.prepareAppOpenAd(activity, AdsConfig.ADIVERY_APP_OPEN);
+            Adivery.addPlacementListener(AdsConfig.ADIVERY_REWARDED, new AdiveryListener() {
+                @Override public void onRewardedAdLoaded(@NonNull String placementId) { }
+                @Override public void onRewardedAdShown(@NonNull String placementId) { }
+                @Override public void onRewardedAdClicked(@NonNull String placementId) { }
+                @Override public void onRewardedAdClosed(@NonNull String placementId, boolean isRewarded) {
+                    if (isRewarded) {
+                        activity.getSharedPreferences("ad_prefs", Activity.MODE_PRIVATE).edit()
+                                .putLong("fullscreen_ads_disabled_until", System.currentTimeMillis() + REWARDED_BYPASS_MS).apply();
+                        android.widget.Toast.makeText(activity, "پاداش فعال شد: تا ۲۴ ساعت تبلیغ تمام‌صفحه نمایش داده نمی‌شود.", android.widget.Toast.LENGTH_LONG).show();
+                    }
+                }
+                @Override public void log(@NonNull String placementId, String message) {
+                    Log.d(TAG, "Adivery rewarded: " + message);
+                }
+            });
+            try { Adivery.prepareRewardedAd(activity, AdsConfig.ADIVERY_REWARDED); } catch (Throwable ignored) { }
         } catch (Throwable error) {
             Log.w(TAG, "Adivery full-screen ad preparation failed safely", error);
         }
@@ -163,7 +181,7 @@ public final class AdsManager {
         } catch (Throwable ignored) { }
     }
 
-    public static void maybeShowInterstitial(Activity activity) {
+    private static boolean isRewardBypassActive(Activity activity) {\n        return activity.getSharedPreferences("ad_prefs", Activity.MODE_PRIVATE)\n                .getLong("fullscreen_ads_disabled_until", 0L) > System.currentTimeMillis();\n    }\n\n    public static void showRewardedAd(Activity activity) {\n        if (activity.isFinishing() || activity.isDestroyed()) return;\n        try {\n            String placement = AdsConfig.ADIVERY_REWARDED;\n            if (Adivery.isLoaded(placement)) {\n                Adivery.showAd(placement);\n            } else {\n                Adivery.prepareRewardedAd(activity, placement);\n                android.widget.Toast.makeText(activity, "تبلیغ در حال آماده‌شدن است؛ چند لحظه دیگر دوباره امتحان کن.", android.widget.Toast.LENGTH_LONG).show();\n            }\n        } catch (Throwable error) {\n            Log.w(TAG, "Rewarded ad skipped safely", error);\n            android.widget.Toast.makeText(activity, "فعلاً تبلیغ جایزه‌ای در دسترس نیست.", android.widget.Toast.LENGTH_SHORT).show();\n        }\n    }\n\n    public static void maybeShowInterstitial(Activity activity) {
         if (activity.isFinishing() || activity.isDestroyed()
                 || System.currentTimeMillis() - lastFullScreenAt < 10 * 60 * 1000L) return;
         try {
@@ -192,6 +210,6 @@ public final class AdsManager {
             }
         } catch (Throwable error) { Log.d(TAG, "Native banner cleanup skipped", error); }
         try { Adivery.removePlacementListener(AdsConfig.ADIVERY_INTERSTITIAL); } catch (Throwable ignored) { }
-        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_APP_OPEN); } catch (Throwable ignored) { }
+        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_APP_OPEN); } catch (Throwable ignored) { }\n        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_REWARDED); } catch (Throwable ignored) { }
     }
 }
