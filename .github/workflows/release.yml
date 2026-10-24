@@ -2,6 +2,9 @@ name: Signed Release APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -60,11 +63,9 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" || {
-            APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-            test -n "$APKSIGNER"
-            "$APKSIGNER" verify --verbose "$APK"
-          }
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
