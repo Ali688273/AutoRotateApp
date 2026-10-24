@@ -230,9 +230,23 @@ public class MainActivity extends AppCompatActivity {
     private void saveOriginal(){if(prefs.getBoolean("original_settings_saved",false))return;prefs.edit().putInt("original_accelerometer_rotation",Settings.System.getInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1)).putInt("original_user_rotation",Settings.System.getInt(getContentResolver(),Settings.System.USER_ROTATION,0)).putBoolean("original_settings_saved",true).apply();}
     private void restoreOriginal(){if(!canWrite()||!prefs.getBoolean("original_settings_saved",false))return;try{Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,prefs.getInt("original_user_rotation",0));Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,prefs.getInt("original_accelerometer_rotation",1));prefs.edit().putBoolean("original_settings_saved",false).apply();}catch(SecurityException ignored){}}
     private boolean apply(String mode){
-        if(!canWrite())return false;try{if("auto".equals(mode)){boolean reset=Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,0);boolean sensor=Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);return reset&&sensor&&Settings.System.getInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0)==1;}
-            int r;switch(mode){case "landscape":case "video":r=1;break;case "reverse_portrait":r=2;break;case "reverse_landscape":r=3;break;default:r=0;}
-            boolean a=Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,r);boolean b=Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);return a&&b;
+        if(!canWrite())return false;
+        try{
+            if("auto".equals(mode)){
+                // Sensor mode only needs the accelerometer switch; do not force a base angle.
+                return Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,1);
+            }
+            int rotation;
+            switch(mode){
+                case "landscape": case "video": rotation=1; break;
+                case "reverse_portrait": rotation=2; break;
+                case "reverse_landscape": rotation=3; break;
+                default: rotation=0;
+            }
+            // Disable sensor rotation first; otherwise Android may ignore USER_ROTATION.
+            boolean sensorOff=Settings.System.putInt(getContentResolver(),Settings.System.ACCELEROMETER_ROTATION,0);
+            boolean angleSet=Settings.System.putInt(getContentResolver(),Settings.System.USER_ROTATION,rotation);
+            return sensorOff && angleSet;
         }catch(SecurityException e){return false;}
     }
     private boolean accessibilityEnabled(){AccessibilityManager m=(AccessibilityManager)getSystemService(ACCESSIBILITY_SERVICE);if(m==null)return false;for(AccessibilityServiceInfo i:m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK))if(i.getId()!=null&&i.getId().contains("PerAppRotationService"))return true;return false;}
