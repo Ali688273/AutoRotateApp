@@ -1,33 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp">
+    android:fillViewport="true"
+    android:background="#F4F6FB">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="تنظیمات چرخش خودکار"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="32dp" />
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="24dp">
 
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/switchRotation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="فعال‌سازی چرخش ۳۶۰ درجه "
-        android:textSize="18sp"
-        android:padding="12dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="چرخش صفحه"
+            android:textColor="#18233A"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp" />
 
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="وضعیت: غیرفعال"
-        android:textSize="16sp"
-        android:layout_marginTop="24dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="حالت مناسب صفحه را انتخاب کن و کنترل چرخش را فعال کن."
+            android:textColor="#58657A"
+            android:textSize="15sp"
+            android:gravity="center"
+            android:layout_marginBottom="26dp" />
 
-</LinearLayout>
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchRotation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="فعال‌سازی کنترل چرخش"
+            android:textColor="#18233A"
+            android:textSize="18sp"
+            android:padding="16dp"
+            android:background="#FFFFFF" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="حالت چرخش"
+            android:textColor="#18233A"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerMode"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="#FFFFFF"
+            android:contentDescription="انتخاب حالت چرخش صفحه" />
+
+        <Button
+            android:id="@+id/buttonApply"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="اعمال حالت انتخاب‌شده"
+            android:textAllCaps="false"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/buttonPermission"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="فعال‌کردن مجوز تنظیمات سیستم"
+            android:textAllCaps="false"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="وضعیت: غیرفعال"
+            android:textColor="#B3261E"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:padding="16dp"
+            android:layout_marginTop="20dp"
+            android:background="#FFFFFF" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="نکته: بعضی برنامه‌ها و بعضی نسخه‌های اندروید چرخش را خودشان قفل می‌کنند؛ در این حالت، تغییر تنظیم سیستم نمی‌تواند اجباراً جهت آن برنامه را عوض کند."
+            android:textColor="#58657A"
+            android:textSize="13sp"
+            android:lineSpacingExtra="3dp"
+            android:layout_marginTop="18dp"
+            android:padding="12dp" />
+
+    </LinearLayout>
+</ScrollView>
