@@ -20,6 +20,12 @@ A lightweight Android utility for controlling device orientation, with Persian a
 
 Per-app rules may be limited by Android versions, manufacturer customizations, games, video apps, or apps that manage orientation themselves. Battery restrictions can also delay background behavior. Some apps may ignore system rotation settings.
 
+## Advertising
+- TapsellPlus standard and native banner placements are integrated in the main screen.
+- Adivery interstitial ads are limited to natural actions and a minimum cooldown; app-open ads are only considered after returning from the background.
+- The optional rewarded ad grants 24 hours without full-screen ads; banners remain available.
+- Ad SDK failures are logged and caught so they should not prevent core rotation controls from working. Live SDK behavior still requires a device test.
+
 ## Build
 JDK 17 and Android SDK Platform 34 are expected. The Gradle Wrapper is included and pins Gradle 8.5 with distribution checksum verification.
 
