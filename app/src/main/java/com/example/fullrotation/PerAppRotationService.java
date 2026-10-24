@@ -32,9 +32,7 @@ public class PerAppRotationService extends AccessibilityService {
     private boolean applyMode(String mode) {
         try {
             if ("auto".equals(mode)) {
-                boolean reset = Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, 0);
-                boolean sensor = Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 1);
-                return reset && sensor && Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
+                return Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 1);
             }
             int rotation;
             switch (mode) {
@@ -43,9 +41,10 @@ public class PerAppRotationService extends AccessibilityService {
                 case "reverse_landscape": rotation = 3; break;
                 default: rotation = 0;
             }
-            boolean a = Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, rotation);
-            boolean b = Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-            return a && b;
+            // Lock the sensor before setting the requested angle.
+            boolean sensorOff = Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+            boolean angleSet = Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, rotation);
+            return sensorOff && angleSet;
         } catch (SecurityException ignored) { return false; }
     }
     @Override public void onInterrupt() { }
