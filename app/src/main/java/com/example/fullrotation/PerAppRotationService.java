@@ -23,7 +23,6 @@ public class PerAppRotationService extends AccessibilityService {
         CharSequence cs = event.getPackageName();
         if (cs == null) return;
         String pkg = cs.toString();
-        if (pkg.equals(getPackageName())) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.System.canWrite(this)) return;
         String mode = prefs.getString("rule_" + pkg, prefs.getString("rotation_mode", "auto"));
         if (pkg.equals(lastPackage) && mode.equals(lastMode)) return;
