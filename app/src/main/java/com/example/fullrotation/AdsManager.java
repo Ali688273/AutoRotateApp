@@ -238,6 +238,7 @@ public final class AdsManager {
             }
         } catch (Throwable error) { Log.d(TAG, "Native banner cleanup skipped", error); }
         try { Adivery.removePlacementListener(AdsConfig.ADIVERY_INTERSTITIAL); } catch (Throwable ignored) { }
-        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_APP_OPEN); } catch (Throwable ignored) { }\n        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_REWARDED); } catch (Throwable ignored) { }
+        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_APP_OPEN); } catch (Throwable ignored) { }
+        try { Adivery.removePlacementListener(AdsConfig.ADIVERY_REWARDED); } catch (Throwable ignored) { }
     }
 }
