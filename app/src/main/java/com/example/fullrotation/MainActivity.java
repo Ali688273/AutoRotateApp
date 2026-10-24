@@ -39,9 +39,28 @@ public class MainActivity extends AppCompatActivity {
         prefs=getSharedPreferences("app_prefs",MODE_PRIVATE);
         lang=prefs.getString("language","fa"); dark=prefs.getBoolean("dark_theme",false);
         setTheme(dark ? R.style.Theme_AutoRotateApp_Dark : R.style.Theme_AutoRotateApp);
+        applyActivityOrientation();
         build();
     }
     private String t(String fa,String en){return lang.equals("fa")?fa:en;}
+    private void applyActivityOrientation(){
+        boolean enabled=prefs!=null && prefs.getBoolean("is_enabled",false);
+        String mode=prefs==null?"auto":prefs.getString("rotation_mode","auto");
+        if(!enabled){setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);return;}
+        switch(mode){
+            case "portrait": case "reading":
+                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); break;
+            case "reverse_portrait":
+                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT); break;
+            case "landscape": case "video":
+                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); break;
+            case "reverse_landscape":
+                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE); break;
+            default:
+                setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR); break;
+        }
+    }
+
     private void build(){
         bg=dark?Color.rgb(12,12,12):Color.rgb(248,248,248);
         card=dark?Color.rgb(30,30,30):Color.WHITE; fg=dark?Color.WHITE:Color.BLACK;
@@ -95,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
             prefs.edit().putBoolean("is_enabled",on).apply();
             if(on){saveOriginal();apply(prefs.getString("rotation_mode","auto"));}
             else restoreOriginal();
+            applyActivityOrientation();
             updateStatus();
         });
 
@@ -107,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
             saveOriginal();
             prefs.edit().putBoolean("is_enabled",true).apply();
             enabled.setChecked(true);
+            applyActivityOrientation();
             boolean ok=apply(prefs.getString("rotation_mode","auto"));
             toast(ok?t("حالت اعمال شد و کنترل روشن ماند","Orientation applied; control remains enabled"):t("اعمال نشد؛ مجوز تنظیمات سیستم را بررسی کن","Could not apply; check system settings permission"));
             updateStatus();
