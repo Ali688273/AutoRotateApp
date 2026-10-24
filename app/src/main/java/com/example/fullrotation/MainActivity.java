@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));});
 
         section(t("قوانین اختصاصی برنامه‌ها","Per-app rules"));
-        add(txt(t("برای هر برنامه جهت جداگانه تعیین کن. برای اجرای خودکار باید سرویس دسترس‌پذیری را فعال کنی.","Choose a separate orientation for each app. Enable the Accessibility service for automatic switching."),14,false,muted),4,6);
+        add(txt(t("ابتدا کنترل عمومی را فعال کن؛ سپس برای هر برنامه جهت جداگانه تعیین کن و سرویس دسترس‌پذیری را هم فعال کن.","First enable global rotation control, then set a separate orientation for each app and enable the Accessibility service."),14,false,muted),4,6);
         Button choose=button(t("انتخاب برنامه و جهت","Choose app and orientation")); add(choose,4,6); choose.setOnClickListener(v->chooseApp());
         Button access=button(t("فعال‌سازی سرویس دسترس‌پذیری","Enable Accessibility service")); add(access,4,6);
         access.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
