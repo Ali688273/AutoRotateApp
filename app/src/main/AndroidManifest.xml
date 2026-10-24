@@ -3,7 +3,6 @@
     package="com.example.fullrotation">
 
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -21,11 +20,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".RotationService"
-            android:enabled="true"
-            android:exported="false" />
 
         <receiver
             android:name=".BootReceiver"
