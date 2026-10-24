@@ -99,8 +99,15 @@ public class MainActivity extends AppCompatActivity {
         Button mode=button(""); setModeButton(mode); add(mode,4,6);
         mode.setOnClickListener(v->chooseMode(null));
         Button apply=button(t("اعمال حالت انتخاب‌شده","Apply selected mode")); add(apply,4,6);
-        apply.setOnClickListener(v->{if(!canWrite()){requestWrite();return;} boolean ok=apply(prefs.getString("rotation_mode","auto")); toast(ok?t("حالت اعمال شد","Orientation applied"):t("اعمال نشد؛ مجوز و سازگاری دستگاه را بررسی کن","Could not apply; check permission and device support"));
-            });
+        apply.setOnClickListener(v->{
+            if(!canWrite()){requestWrite();return;}
+            saveOriginal();
+            prefs.edit().putBoolean("is_enabled",true).apply();
+            enabled.setChecked(true);
+            boolean ok=apply(prefs.getString("rotation_mode","auto"));
+            toast(ok?t("حالت اعمال شد و کنترل روشن ماند","Orientation applied; control remains enabled"):t("اعمال نشد؛ مجوز تنظیمات سیستم را بررسی کن","Could not apply; check system settings permission"));
+            updateStatus();
+        });
 
         page=pages[1];
         section(t("قوانین اختصاصی برنامه‌ها","Per-app rules"));
